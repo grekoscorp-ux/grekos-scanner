@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grekos Scanner</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; }
+.header { background: #111; color: white; padding: 16px 20px; text-align: center; }
+.header h1 { font-size: 20px; font-weight: 600; letter-spacing: 2px; }
+.header p { font-size: 12px; color: #888; margin-top: 2px; }
+.container { max-width: 480px; margin: 0 auto; padding: 20px 16px; }
+.card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.cam-box { background: #111; border-radius: 10px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; overflow: hidden; position: relative; }
+#video { width: 100%; height: 100%; object-fit: cover; display: none; }
+#canvas { display: none; }
+.cam-placeholder { text-align: center; color: #555; }
+.cam-placeholder svg { width: 60px; height: 60px; margin-bottom: 10px; }
+.cam-placeholder p { font-size: 13px; }
+.scan-line { display: none; position: absolute; left: 10%; right: 10%; height: 2px; background: #00ff88; border-radius: 2px; animation: scanline 2s linear infinite; }
+@keyframes scanline { 0%{top:15%} 50%{top:80%} 100%{top:15%} }
+.btn { width: 100%; padding: 14px; border-radius: 10px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-primary { background: #111; color: white; }
+.btn-primary:active { background: #333; }
+.btn-outline { background: white; color: #111; border: 1.5px solid #ddd; margin-top: 10px; }
+.btn-outline:active { background: #f5f5f5; }
+.divider { display: flex; align-items: center; gap: 10px; margin: 14px 0; color: #aaa; font-size: 12px; }
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #eee; }
+.input-row { display: flex; gap: 8px; }
+input[type=text] { flex: 1; padding: 12px 14px; border: 1.5px solid #eee; border-radius: 10px; font-size: 15px; outline: none; }
+input[type=text]:focus { border-color: #111; }
+.btn-search { padding: 12px 18px; background: #111; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.result-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: none; }
+.product-name { font-size: 17px; font-weight: 600; color: #111; margin-bottom: 14px; line-height: 1.3; }
+.badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.badge-ok { background: #e6f9ef; color: #1a7a45; }
+.badge-no { background: #fde8e8; color: #b91c1c; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
+.stat { background: #f8f8f8; border-radius: 10px; padding: 12px; }
+.stat-label { font-size: 11px; color: #888; margin-bottom: 4px; }
+.stat-value { font-size: 24px; font-weight: 700; color: #111; }
+.stat-value.ok { color: #1a7a45; }
+.stat-value.no { color: #b91c1c; }
+.ubicacion { display: flex; align-items: center; gap: 10px; background: #eff6ff; border-radius: 10px; padding: 12px 14px; }
+.ubicacion svg { width: 20px; height: 20px; flex-shrink: 0; color: #2563eb; }
+.ubicacion-text { font-size: 14px; font-weight: 600; color: #1d4ed8; }
+.ubicacion-label { font-size: 11px; color: #60a5fa; }
+.error-card { background: #fde8e8; border-radius: 12px; padding: 20px; text-align: center; display: none; }
+.error-card p { color: #b91c1c; font-size: 14px; font-weight: 500; }
+.loading { text-align: center; padding: 30px; display: none; }
+.spinner { width: 36px; height: 36px; border: 3px solid #eee; border-top-color: #111; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 10px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading p { font-size: 13px; color: #888; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>GREKOS</h1>
+  <p>Consulta de stock</p>
+</div>
+
+<div class="container">
+
+  <div class="card" id="scanner-section">
+    <div class="cam-box">
+      <video id="video" playsinline></video>
+      <canvas id="canvas"></canvas>
+      <div class="cam-placeholder" id="cam-placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 9V6a1 1 0 011-1h3M3 15v3a1 1 0 001 1h3M21 9V6a1 1 0 00-1-1h-3M21 15v3a1 1 0 01-1 1h-3M9 12h6M12 9v6"/>
+        </svg>
+        <p>Toca para escanear QR</p>
+      </div>
+      <div class="scan-line" id="scan-line"></div>
+    </div>
+
+    <button class="btn btn-primary" id="btn-scan" onclick="startScan()">📷 Escanear QR</button>
+
+    <div class="divider">o ingresa el código</div>
+
+    <div class="input-row">
+      <input type="text" id="codigo-input" placeholder="Ej: P001" onkeydown="if(event.key==='Enter')buscar()">
+      <button class="btn-search" onclick="buscar()">Buscar</button>
+    </div>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>Buscando producto...</p>
+  </div>
+
+  <div class="result-card" id="result-section"></div>
+
+  <div class="error-card" id="error-section">
+    <p id="error-msg">Producto no encontrado</p>
+    <button class="btn btn-outline" onclick="resetApp()" style="margin-top:12px;">← Volver</button>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbwjZJ9u_9Wee43Q9Hd-KGzJvPcwzKp4YlDUJ9R-I_S1fuNz0sg6AAuwhXnA0E7r_xvtow/exec";
+let scanning = false, videoStream = null, animFrame = null;
+
+function show(id){ document.getElementById(id).style.display = ''; }
+function hide(id){ document.getElementById(id).style.display = 'none'; }
+
+function resetApp(){
+  stopScan();
+  show('scanner-section');
+  hide('result-section');
+  hide('error-section');
+  hide('loading');
+  document.getElementById('result-section').style.display = 'none';
+  document.getElementById('codigo-input').value = '';
+}
+
+async function startScan(){
+  try {
+    const video = document.getElementById('video');
+    videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    video.srcObject = videoStream;
+    video.style.display = 'block';
+    await video.play();
+    hide('cam-placeholder');
+    document.getElementById('scan-line').style.display = 'block';
+    scanning = true;
+    scanFrame();
+    const btn = document.getElementById('btn-scan');
+    btn.textContent = '⏹ Detener';
+    btn.onclick = stopScan;
+  } catch(e){
+    alert('No se pudo acceder a la cámara. Usa el campo de código.');
+  }
+}
+
+function stopScan(){
+  scanning = false;
+  if(videoStream){ videoStream.getTracks().forEach(t=>t.stop()); videoStream=null; }
+  const video = document.getElementById('video');
+  video.style.display = 'none';
+  video.srcObject = null;
+  show('cam-placeholder');
+  hide('scan-line');
+  const btn = document.getElementById('btn-scan');
+  btn.textContent = '📷 Escanear QR';
+  btn.onclick = startScan;
+  if(animFrame){ cancelAnimationFrame(animFrame); animFrame=null; }
+}
+
+function scanFrame(){
+  if(!scanning) return;
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  if(video.readyState === video.HAVE_ENOUGH_DATA){
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+    const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(img.data, img.width, img.height);
+    if(code){
+      stopScan();
+      document.getElementById('codigo-input').value = code.data;
+      buscar(code.data);
+      return;
+    }
+  }
+  animFrame = requestAnimationFrame(scanFrame);
+}
+
+async function buscar(codigoOverride){
+  const codigo = codigoOverride || document.getElementById('codigo-input').value.trim();
+  if(!codigo) return;
+  hide('scanner-section');
+  hide('result-section');
+  hide('error-section');
+  show('loading');
+
+  try {
+    const res = await fetch(API_URL + '?codigo=' + encodeURIComponent(codigo));
+    const data = await res.json();
+    hide('loading');
+    if(!data || data.length === 0){
+      document.getElementById('error-msg').textContent = 'Producto no encontrado: ' + codigo;
+      show('error-section');
+      return;
+    }
+    renderResult(data);
+  } catch(e){
+    hide('loading');
+    document.getElementById('error-msg').textContent = 'Error de conexión. Verifica tu internet.';
+    show('error-section');
+  }
+}
+
+function renderResult(data){
+  const item = data[0];
+  const stock = parseInt(item.stock) || 0;
+  const hayStock = stock > 0;
+  const precio = parseFloat(item.precio || 0).toFixed(2);
+
+  let html = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+      <div class="product-name" style="flex:1;margin-right:10px;">${item.descripcion}</div>
+      <span class="badge ${hayStock?'badge-ok':'badge-no'}">${hayStock?'✓ HAY':'✗ AGOTADO'}</span>
+    </div>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Stock</div>
+        <div class="stat-value ${hayStock?'ok':'no'}">${stock}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Precio</div>
+        <div class="stat-value">S/ ${precio}</div>
+      </div>
+    </div>`;
+
+  if(item.ubicacion){
+    html += `
+    <div class="ubicacion">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+        <circle cx="12" cy="9" r="2.5"/>
+      </svg>
+      <div>
+        <div class="ubicacion-label">Ubicación</div>
+        <div class="ubicacion-text">${item.ubicacion}</div>
+      </div>
+    </div>`;
+  }
+
+  if(data.length > 1){
+    html += `<div style="margin-top:14px;padding-top:14px;border-top:1px solid #eee;">
+      <p style="font-size:12px;color:#888;margin-bottom:8px;">Otras variantes:</p>`;
+    data.slice(1).forEach(v => {
+      const vs = parseInt(v.stock)||0;
+      html += `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f5f5f5;">
+        <span style="font-size:13px;color:#333;">${v.descripcion}</span>
+        <span style="font-size:13px;font-weight:600;color:${vs>0?'#1a7a45':'#b91c1c'};">${vs} uds</span>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `<button class="btn btn-outline" onclick="resetApp()" style="margin-top:14px;">← Nueva búsqueda</button>`;
+
+  const section = document.getElementById('result-section');
+  section.innerHTML = html;
+  section.style.display = 'block';
+}
+</script>
+</body>
+</html>
