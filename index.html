@@ -4,323 +4,241 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Grekos Scanner</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; }
-.header { background: #111; color: white; padding: 16px 20px; text-align: center; }
-.header h1 { font-size: 20px; font-weight: 600; letter-spacing: 2px; }
-.header p { font-size: 12px; color: #888; margin-top: 2px; }
-.container { max-width: 480px; margin: 0 auto; padding: 20px 16px; }
-.card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-.cam-box { background: #111; border-radius: 10px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; overflow: hidden; position: relative; }
-#video { width: 100%; height: 100%; object-fit: cover; display: none; }
-#canvas { display: none; }
-.cam-placeholder { text-align: center; color: #555; }
-.cam-placeholder svg { width: 60px; height: 60px; margin-bottom: 10px; }
-.cam-placeholder p { font-size: 13px; }
-.scan-line { display: none; position: absolute; left: 10%; right: 10%; height: 2px; background: #00ff88; border-radius: 2px; animation: scanline 2s linear infinite; }
-@keyframes scanline { 0%{top:15%} 50%{top:80%} 100%{top:15%} }
-.btn { width: 100%; padding: 14px; border-radius: 10px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-.btn-primary { background: #111; color: white; }
-.btn-outline { background: white; color: #111; border: 1.5px solid #ddd; margin-top: 10px; }
-.divider { display: flex; align-items: center; gap: 10px; margin: 14px 0; color: #aaa; font-size: 12px; }
-.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #eee; }
-.input-row { display: flex; gap: 8px; }
-input[type=text] { flex: 1; padding: 12px 14px; border: 1.5px solid #eee; border-radius: 10px; font-size: 15px; outline: none; }
-input[type=text]:focus { border-color: #111; }
-.btn-search { padding: 12px 18px; background: #111; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
-.loading { text-align: center; padding: 30px; display: none; }
-.spinner { width: 36px; height: 36px; border: 3px solid #eee; border-top-color: #111; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 10px; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.loading p { font-size: 13px; color: #888; }
-.filtros-card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: none; }
-.producto-base { font-size: 13px; color: #888; margin-bottom: 4px; }
-.producto-nombre { font-size: 17px; font-weight: 600; color: #111; margin-bottom: 16px; }
-.filtro-label { font-size: 12px; color: #888; margin-bottom: 6px; font-weight: 500; }
-select { width: 100%; padding: 12px 14px; border: 1.5px solid #eee; border-radius: 10px; font-size: 15px; outline: none; background: white; margin-bottom: 12px; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; }
-select:focus { border-color: #111; }
-.btn-consultar { width: 100%; padding: 14px; border-radius: 10px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; background: #111; color: white; }
-.result-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: none; }
-.badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-.badge-ok { background: #e6f9ef; color: #1a7a45; }
-.badge-no { background: #fde8e8; color: #b91c1c; }
-.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
-.stat { background: #f8f8f8; border-radius: 10px; padding: 12px; }
-.stat-label { font-size: 11px; color: #888; margin-bottom: 4px; }
-.stat-value { font-size: 24px; font-weight: 700; color: #111; }
-.stat-value.ok { color: #1a7a45; }
-.stat-value.no { color: #b91c1c; }
-.ubicacion { display: flex; align-items: center; gap: 10px; background: #eff6ff; border-radius: 10px; padding: 12px 14px; margin-top: 4px; }
-.ubicacion-text { font-size: 14px; font-weight: 600; color: #1d4ed8; }
-.ubicacion-label { font-size: 11px; color: #60a5fa; }
-.error-card { background: #fde8e8; border-radius: 12px; padding: 20px; text-align: center; display: none; }
-.error-card p { color: #b91c1c; font-size: 14px; font-weight: 500; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f0f0; min-height: 100vh; }
+  .header { background: #111; color: white; padding: 16px 20px; text-align: center; }
+  .header h1 { font-size: 20px; font-weight: 700; letter-spacing: 2px; }
+  .header p { font-size: 11px; color: #888; margin-top: 2px; }
+  .container { padding: 16px; max-width: 480px; margin: 0 auto; }
+  .card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  #qr-video { width: 100%; border-radius: 10px; background: #000; display: block; }
+  .btn-scan { width: 100%; background: #111; color: white; border: none; border-radius: 10px; padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+  .btn-scan:active { background: #333; }
+  .sep { text-align: center; color: #aaa; font-size: 12px; margin: 10px 0; }
+  .search-group { display: flex; gap: 8px; }
+  .search-group input { flex: 1; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px; outline: none; }
+  .search-group input:focus { border-color: #111; }
+  .btn-buscar { background: #111; color: white; border: none; border-radius: 8px; padding: 12px 18px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .producto-nombre { font-size: 17px; font-weight: 800; color: #111; margin-bottom: 6px; }
+  .precio-base { font-size: 13px; color: #666; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #eee; }
+  .filtros-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .filtro-label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  select { width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; background: white; outline: none; cursor: pointer; }
+  select:focus { border-color: #111; }
+  .resultado { border-radius: 12px; padding: 20px; text-align: center; margin-top: 4px; }
+  .resultado.hay { background: #d4edda; border: 2px solid #28a745; }
+  .resultado.nohay { background: #f8d7da; border: 2px solid #dc3545; }
+  .resultado .emoji { font-size: 44px; margin-bottom: 6px; }
+  .resultado .status { font-size: 22px; font-weight: 800; }
+  .resultado.hay .status { color: #155724; }
+  .resultado.nohay .status { color: #721c24; }
+  .stock-num { font-size: 40px; font-weight: 900; color: #155724; margin: 4px 0; }
+  .info-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.6); border-radius: 8px; padding: 10px 14px; margin-top: 8px; }
+  .info-row span { font-size: 12px; color: #666; }
+  .info-row strong { font-size: 14px; color: #222; }
+  .hidden { display: none; }
+  .spinner { text-align: center; padding: 16px; color: #888; font-size: 13px; }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <h1>GREKOS</h1>
-  <p>Consulta de stock</p>
+  <h1>GREKOS SCANNER</h1>
+  <p>Sistema de inventario</p>
 </div>
 
 <div class="container">
 
-  <div class="card" id="scanner-section">
-    <div class="cam-box">
-      <video id="video" playsinline></video>
-      <canvas id="canvas"></canvas>
-      <div class="cam-placeholder" id="cam-placeholder">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M3 9V6a1 1 0 011-1h3M3 15v3a1 1 0 001 1h3M21 9V6a1 1 0 00-1-1h-3M21 15v3a1 1 0 01-1 1h-3"/>
-          <rect x="8" y="8" width="8" height="8" rx="1"/>
-        </svg>
-        <p>Toca para escanear QR</p>
+  <div class="card">
+    <div class="label">Escanear producto</div>
+    <video id="qr-video" class="hidden" playsinline></video>
+    <button class="btn-scan" id="btnScan" onclick="toggleScan()">📷 Abrir cámara</button>
+    <div class="sep">— o busca por código —</div>
+    <div class="search-group">
+      <input type="text" id="inputCodigo" placeholder="Ej: P001" onkeydown="if(event.key==='Enter') buscarPorCodigo(this.value.trim())" />
+      <button class="btn-buscar" onclick="buscarPorCodigo(document.getElementById('inputCodigo').value.trim())">Buscar</button>
+    </div>
+    <div id="spinnerBusqueda" class="spinner hidden">Buscando...</div>
+  </div>
+
+  <div class="card hidden" id="cardFiltros">
+    <div class="producto-nombre" id="nombreProducto"></div>
+    <div class="precio-base" id="precioBase"></div>
+    <div class="label">Selecciona variante</div>
+    <div class="filtros-grid">
+      <div>
+        <div class="filtro-label">Color</div>
+        <select id="selectColor" onchange="verificarStock()">
+          <option value="">-- Color --</option>
+        </select>
       </div>
-      <div class="scan-line" id="scan-line"></div>
+      <div>
+        <div class="filtro-label">Talla</div>
+        <select id="selectTalla" onchange="verificarStock()">
+          <option value="">-- Talla --</option>
+        </select>
+      </div>
     </div>
-    <button class="btn btn-primary" id="btn-scan" onclick="startScan()">📷 Escanear QR</button>
-    <div class="divider">o busca por nombre</div>
-    <div class="input-row">
-      <input type="text" id="busqueda-input" placeholder="Ej: polo compresor" onkeydown="if(event.key==='Enter')buscarProducto()">
-      <button class="btn-search" onclick="buscarProducto()">Buscar</button>
-    </div>
-  </div>
-
-  <div class="loading" id="loading">
-    <div class="spinner"></div>
-    <p>Buscando...</p>
-  </div>
-
-  <div class="filtros-card" id="filtros-section">
-    <div class="producto-base">Producto encontrado</div>
-    <div class="producto-nombre" id="producto-nombre-texto"></div>
-    <div class="filtro-label">Color</div>
-    <select id="select-color" onchange="actualizarTallas()">
-      <option value="">-- Selecciona color --</option>
-    </select>
-    <div class="filtro-label">Talla</div>
-    <select id="select-talla">
-      <option value="">-- Selecciona talla --</option>
-    </select>
-    <button class="btn-consultar" onclick="consultarStock()" style="margin-top:4px;">Ver stock</button>
-    <button class="btn btn-outline" onclick="resetApp()">← Nueva búsqueda</button>
-  </div>
-
-  <div class="result-card" id="result-section"></div>
-
-  <div class="error-card" id="error-section">
-    <p id="error-msg">Producto no encontrado</p>
-    <button class="btn btn-outline" onclick="resetApp()" style="margin-top:12px;">← Volver</button>
+    <div id="resultadoStock"></div>
   </div>
 
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbwjZJ9u_9Wee43Q9Hd-KGzJvPcwzKp4YlDUJ9R-I_S1fuNz0sg6AAuwhXnA0E7r_xvtow/exec";
+const API = "https://script.google.com/macros/s/AKfycbwjZJ9u_9Wee43Q9Hd-KGzJvPcwzKp4YlDUJ9R-I_S1fuNz0sg6AAuwhXnA0E7r_xvtow/exec";
+
+const COLORES = ["negro","blanco","rojo","azul","plomo","celeste","verde","amarillo","rosado","morado","camuflado","gris","naranja","ngr","blc","plm","cls","cmf","amr","rsd","mrd"];
+const TALLAS  = ["XS","S","M","L","XL","XXL","XXXL","28","29","30","31","32","33","34","36","38","40","42","44","UNICA"];
+
 let todosLosProductos = [];
-let scanning = false, videoStream = null, animFrame = null;
+let scanActivo = false;
+let stream = null;
 
-const COLORES = ['negro','blanco','rojo','azul','verde','amarillo','rosado','morado','celeste','plomo','gris','naranja','beige','camuflado','ngr','blc','rsd','mrd','cls','plm','cmf','amr'];
-const TALLAS = ['xs','s','m','l','xl','xxl','2xl','3xl','4','5','6','7','8','9','10','11','12','38','39','40','41','42','43','44','45'];
-
-function show(id){ document.getElementById(id).style.display=''; }
-function hide(id){ document.getElementById(id).style.display='none'; }
-
-function resetApp(){
-  stopScan();
-  todosLosProductos=[];
-  show('scanner-section');
-  hide('filtros-section');
-  hide('result-section');
-  hide('error-section');
-  hide('loading');
-  document.getElementById('busqueda-input').value='';
-  document.getElementById('result-section').style.display='none';
-}
-
-function extraerColor(desc){
-  const d = desc.toLowerCase();
-  for(const c of COLORES){
-    const regex = new RegExp('(^|\\s)'+c+'(\\s|$)');
-    if(regex.test(d)) return c;
-  }
-  return null;
-}
-
-function extraerTalla(desc){
-  const d = desc.toLowerCase().trim();
-  const partes = d.split(' ');
-  const ultima = partes[partes.length-1];
-  for(const t of TALLAS){
-    if(ultima === t) return t;
-  }
-  return ultima;
-}
-
-function extraerNombreBase(desc){
-  const color = extraerColor(desc);
-  const talla = extraerTalla(desc);
-  let base = desc.toLowerCase();
-  if(talla) base = base.replace(new RegExp('\\s*'+talla+'\\s*$'),'').trim();
-  if(color) base = base.replace(new RegExp('(^|\\s)'+color+'(\\s|$)'),' ').trim();
-  return base;
-}
-
-async function startScan(){
+async function toggleScan() {
+  if (scanActivo) { detenerScan(); return; }
+  scanActivo = true;
+  document.getElementById("btnScan").textContent = "⏹ Detener cámara";
+  const video = document.getElementById("qr-video");
+  video.classList.remove("hidden");
   try {
-    const video = document.getElementById('video');
-    videoStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-    video.srcObject = videoStream;
-    video.style.display = 'block';
-    await video.play();
-    hide('cam-placeholder');
-    document.getElementById('scan-line').style.display='block';
-    scanning=true;
-    scanFrame();
-    const btn=document.getElementById('btn-scan');
-    btn.textContent='⏹ Detener';
-    btn.onclick=stopScan;
-  } catch(e){ alert('No se pudo acceder a la cámara.'); }
-}
-
-function stopScan(){
-  scanning=false;
-  if(videoStream){videoStream.getTracks().forEach(t=>t.stop());videoStream=null;}
-  const video=document.getElementById('video');
-  video.style.display='none';
-  video.srcObject=null;
-  show('cam-placeholder');
-  hide('scan-line');
-  const btn=document.getElementById('btn-scan');
-  btn.textContent='📷 Escanear QR';
-  btn.onclick=startScan;
-  if(animFrame){cancelAnimationFrame(animFrame);animFrame=null;}
-}
-
-function scanFrame(){
-  if(!scanning) return;
-  const video=document.getElementById('video');
-  const canvas=document.getElementById('canvas');
-  if(video.readyState===video.HAVE_ENOUGH_DATA){
-    canvas.width=video.videoWidth;
-    canvas.height=video.videoHeight;
-    const ctx=canvas.getContext('2d');
-    ctx.drawImage(video,0,0);
-    const img=ctx.getImageData(0,0,canvas.width,canvas.height);
-    const code=jsQR(img.data,img.width,img.height);
-    if(code){stopScan();document.getElementById('busqueda-input').value=code.data;buscarProducto(code.data);return;}
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    video.srcObject = stream;
+    video.play();
+    requestAnimationFrame(leerQR);
+  } catch(e) {
+    alert("No se pudo acceder a la cámara");
+    detenerScan();
   }
-  animFrame=requestAnimationFrame(scanFrame);
 }
 
-async function buscarProducto(override){
-  const busqueda=override||document.getElementById('busqueda-input').value.trim();
-  if(!busqueda) return;
-  hide('scanner-section');
-  hide('filtros-section');
-  hide('result-section');
-  hide('error-section');
-  show('loading');
+function detenerScan() {
+  scanActivo = false;
+  document.getElementById("btnScan").textContent = "📷 Abrir cámara";
+  document.getElementById("qr-video").classList.add("hidden");
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+}
+
+function leerQR() {
+  if (!scanActivo) return;
+  const video = document.getElementById("qr-video");
+  if (video.readyState !== video.HAVE_ENOUGH_DATA) { requestAnimationFrame(leerQR); return; }
+  const canvas = document.createElement("canvas");
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(video, 0, 0);
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const code = jsQR(imageData.data, imageData.width, imageData.height);
+  if (code) {
+    detenerScan();
+    buscarPorCodigo(code.data.trim());
+  } else {
+    requestAnimationFrame(leerQR);
+  }
+}
+
+async function buscarPorCodigo(codigo) {
+  if (!codigo) return;
+  document.getElementById("spinnerBusqueda").classList.remove("hidden");
+  document.getElementById("cardFiltros").classList.add("hidden");
   try {
-    const res=await fetch(API_URL+'?busqueda='+encodeURIComponent(busqueda));
-    const data=await res.json();
-    hide('loading');
-    if(!data||data.length===0){
-      document.getElementById('error-msg').textContent='No se encontró: '+busqueda;
-      show('error-section');
+    const res = await fetch(`${API}?codigo=${encodeURIComponent(codigo)}`);
+    const data = await res.json();
+    if (!data || data.length === 0) {
+      document.getElementById("spinnerBusqueda").classList.add("hidden");
+      alert("Producto no encontrado: " + codigo);
       return;
     }
-    todosLosProductos=data;
-    mostrarFiltros(data);
-  } catch(e){
-    hide('loading');
-    document.getElementById('error-msg').textContent='Error de conexión.';
-    show('error-section');
+    const nombreBase = extraerNombreBase(data[0].descripcion);
+    await buscarVariantes(nombreBase, data[0].precio);
+  } catch(e) {
+    document.getElementById("spinnerBusqueda").classList.add("hidden");
+    alert("Error al conectar con el inventario");
   }
 }
 
-function mostrarFiltros(productos){
-  const nombreBase=extraerNombreBase(productos[0].descripcion);
-  document.getElementById('producto-nombre-texto').textContent=nombreBase.charAt(0).toUpperCase()+nombreBase.slice(1);
-  const colores=[...new Set(productos.map(p=>extraerColor(p.descripcion)).filter(Boolean))];
-  const selectColor=document.getElementById('select-color');
-  selectColor.innerHTML='<option value="">-- Selecciona color --</option>';
-  colores.forEach(c=>{
-    const opt=document.createElement('option');
-    opt.value=c;
-    opt.textContent=c.charAt(0).toUpperCase()+c.slice(1);
-    selectColor.appendChild(opt);
+async function buscarVariantes(nombreBase, precio) {
+  try {
+    const res = await fetch(`${API}?busqueda=${encodeURIComponent(nombreBase)}`);
+    const data = await res.json();
+    document.getElementById("spinnerBusqueda").classList.add("hidden");
+    if (!data || data.length === 0) { alert("Sin variantes"); return; }
+    todosLosProductos = data;
+
+    const coloresSet = new Set();
+    const tallasSet  = new Set();
+    data.forEach(p => {
+      const desc  = p.descripcion.toLowerCase();
+      const words = desc.split(" ");
+      COLORES.forEach(c => { if (desc.includes(c.toLowerCase())) coloresSet.add(c); });
+      TALLAS.forEach(t  => { if (words.includes(t.toLowerCase()))  tallasSet.add(t); });
+    });
+
+    document.getElementById("nombreProducto").textContent = nombreBase.toUpperCase();
+    document.getElementById("precioBase").innerHTML = precio ? `Precio base: <strong>S/ ${parseFloat(precio).toFixed(2)}</strong>` : "";
+    llenarSelect("selectColor", [...coloresSet]);
+    llenarSelect("selectTalla",  [...tallasSet]);
+    document.getElementById("cardFiltros").classList.remove("hidden");
+    document.getElementById("resultadoStock").innerHTML = "";
+  } catch(e) {
+    document.getElementById("spinnerBusqueda").classList.add("hidden");
+    alert("Error al cargar variantes");
+  }
+}
+
+function llenarSelect(id, opciones) {
+  const sel = document.getElementById(id);
+  const esColor = id === "selectColor";
+  sel.innerHTML = `<option value="">-- ${esColor ? "Color" : "Talla"} --</option>`;
+  opciones.forEach(op => {
+    const opt = document.createElement("option");
+    opt.value = op; opt.textContent = op.toUpperCase();
+    sel.appendChild(opt);
   });
-  if(colores.length===1){selectColor.value=colores[0];actualizarTallas();}
-  show('filtros-section');
 }
 
-function actualizarTallas(){
-  const color=document.getElementById('select-color').value;
-  const selectTalla=document.getElementById('select-talla');
-  selectTalla.innerHTML='<option value="">-- Selecciona talla --</option>';
-  if(!color) return;
-  const filtrados=todosLosProductos.filter(p=>extraerColor(p.descripcion)===color);
-  const tallas=[...new Set(filtrados.map(p=>extraerTalla(p.descripcion)).filter(Boolean))];
-  tallas.forEach(t=>{
-    const opt=document.createElement('option');
-    opt.value=t;
-    opt.textContent=t.toUpperCase();
-    selectTalla.appendChild(opt);
+function verificarStock() {
+  const color = document.getElementById("selectColor").value;
+  const talla = document.getElementById("selectTalla").value;
+  if (!color || !talla) { document.getElementById("resultadoStock").innerHTML = ""; return; }
+
+  const match = todosLosProductos.find(p => {
+    const desc  = p.descripcion.toLowerCase();
+    const words = desc.split(" ");
+    return desc.includes(color.toLowerCase()) && words.includes(talla.toLowerCase());
   });
-  if(tallas.length===1) selectTalla.value=tallas[0];
-}
 
-function consultarStock(){
-  const color=document.getElementById('select-color').value;
-  const talla=document.getElementById('select-talla').value;
-  if(!color){alert('Selecciona un color');return;}
-  if(!talla){alert('Selecciona una talla');return;}
-  const producto=todosLosProductos.find(p=>extraerColor(p.descripcion)===color&&extraerTalla(p.descripcion)===talla);
-  if(!producto){
-    document.getElementById('error-msg').textContent='No hay ese color y talla.';
-    hide('filtros-section');
-    show('error-section');
-    return;
+  const div = document.getElementById("resultadoStock");
+  if (match && parseInt(match.stock) > 0) {
+    div.innerHTML = `
+      <div class="resultado hay">
+        <div class="emoji">✅</div>
+        <div class="status">HAY STOCK</div>
+        <div class="stock-num">${match.stock}</div>
+        <div style="font-size:12px;color:#155724;">unidades disponibles</div>
+        <div class="info-row"><span>📍 Ubicación</span><strong>${match.ubicacion || "—"}</strong></div>
+        <div class="info-row"><span>💰 Precio</span><strong>S/ ${parseFloat(match.precio).toFixed(2)}</strong></div>
+        <div class="info-row"><span>🏷 Código</span><strong>${match.codigo}</strong></div>
+      </div>`;
+  } else {
+    div.innerHTML = `
+      <div class="resultado nohay">
+        <div class="emoji">❌</div>
+        <div class="status">SIN STOCK</div>
+        <div style="font-size:13px;color:#721c24;margin-top:6px;">No hay ${color.toUpperCase()} talla ${talla.toUpperCase()}</div>
+      </div>`;
   }
-  renderResult(producto);
 }
 
-function renderResult(item){
-  const stock=parseInt(item.stock)||0;
-  const hayStock=stock>0;
-  const precio=parseFloat(item.precio||0).toFixed(2);
-  let html=`
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
-      <div style="font-size:16px;font-weight:600;color:#111;flex:1;margin-right:10px;">${item.descripcion}</div>
-      <span class="badge ${hayStock?'badge-ok':'badge-no'}">${hayStock?'✓ HAY':'✗ AGOTADO'}</span>
-    </div>
-    <div class="stats">
-      <div class="stat"><div class="stat-label">Stock</div><div class="stat-value ${hayStock?'ok':'no'}">${stock}</div></div>
-      <div class="stat"><div class="stat-label">Precio</div><div class="stat-value">S/ ${precio}</div></div>
-    </div>`;
-  if(item.ubicacion){
-    html+=`<div class="ubicacion">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2">
-        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-        <circle cx="12" cy="9" r="2.5"/>
-      </svg>
-      <div><div class="ubicacion-label">Ubicación</div><div class="ubicacion-text">${item.ubicacion}</div></div>
-    </div>`;
-  }
-  html+=`<button class="btn btn-outline" onclick="volverFiltros()" style="margin-top:14px;">← Cambiar color/talla</button>
-    <button class="btn btn-outline" onclick="resetApp()" style="margin-top:8px;">🔍 Nueva búsqueda</button>`;
-  hide('filtros-section');
-  const section=document.getElementById('result-section');
-  section.innerHTML=html;
-  section.style.display='block';
-}
-
-function volverFiltros(){
-  hide('result-section');
-  show('filtros-section');
+function extraerNombreBase(descripcion) {
+  let palabras = descripcion.toLowerCase().split(" ");
+  palabras = palabras.filter(p =>
+    !TALLAS.map(t=>t.toLowerCase()).includes(p) &&
+    !COLORES.map(c=>c.toLowerCase()).includes(p)
+  );
+  return palabras.join(" ").trim();
 }
 </script>
 </body>
