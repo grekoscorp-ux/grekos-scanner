@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Grekos Scanner</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f0f0; min-height: 100vh; }
@@ -13,34 +12,45 @@
   .header p { font-size: 11px; color: #888; margin-top: 2px; }
   .container { padding: 16px; max-width: 480px; margin: 0 auto; }
   .card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-  .label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-  #qr-video { width: 100%; border-radius: 10px; background: #000; display: block; }
-  .btn-scan { width: 100%; background: #111; color: white; border: none; border-radius: 10px; padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 10px; }
-  .btn-scan:active { background: #333; }
-  .sep { text-align: center; color: #aaa; font-size: 12px; margin: 10px 0; }
+
+  /* Búsqueda manual (solo para pruebas) */
   .search-group { display: flex; gap: 8px; }
   .search-group input { flex: 1; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px; outline: none; }
   .search-group input:focus { border-color: #111; }
   .btn-buscar { background: #111; color: white; border: none; border-radius: 8px; padding: 12px 18px; font-size: 14px; font-weight: 600; cursor: pointer; }
-  .producto-nombre { font-size: 17px; font-weight: 800; color: #111; margin-bottom: 6px; }
-  .precio-base { font-size: 13px; color: #666; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #eee; }
+  .label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+
+  /* Foto slider */
+  .foto-slider { position: relative; width: 100%; height: 220px; background: #eee; border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
+  .foto-slider img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s; }
+  .foto-slider img.active { opacity: 1; }
+  .foto-slider .no-foto { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 13px; }
+  .foto-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 12px; }
+  .foto-dots span { width: 8px; height: 8px; border-radius: 50%; background: #ddd; cursor: pointer; transition: background 0.2s; }
+  .foto-dots span.active { background: #111; }
+
+  /* Producto */
+  .producto-nombre { font-size: 17px; font-weight: 800; color: #111; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #eee; }
   .filtros-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
   .filtro-label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
   select { width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; background: white; outline: none; cursor: pointer; }
   select:focus { border-color: #111; }
-  .resultado { border-radius: 12px; padding: 20px; text-align: center; margin-top: 4px; }
+
+  /* Resultado */
+  .resultado { border-radius: 12px; padding: 24px 20px; text-align: center; margin-top: 4px; }
   .resultado.hay { background: #d4edda; border: 2px solid #28a745; }
   .resultado.nohay { background: #f8d7da; border: 2px solid #dc3545; }
-  .resultado .emoji { font-size: 44px; margin-bottom: 6px; }
-  .resultado .status { font-size: 22px; font-weight: 800; }
+  .resultado .emoji { font-size: 50px; margin-bottom: 6px; }
+  .resultado .status { font-size: 24px; font-weight: 800; }
   .resultado.hay .status { color: #155724; }
   .resultado.nohay .status { color: #721c24; }
-  .stock-num { font-size: 40px; font-weight: 900; color: #155724; margin: 4px 0; }
-  .info-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.6); border-radius: 8px; padding: 10px 14px; margin-top: 8px; }
-  .info-row span { font-size: 12px; color: #666; }
-  .info-row strong { font-size: 14px; color: #222; }
+  .stock-num { font-size: 48px; font-weight: 900; color: #155724; margin: 4px 0; }
+  .stock-label { font-size: 12px; color: #155724; margin-bottom: 12px; }
+  .ubicacion-box { background: rgba(255,255,255,0.7); border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .ubicacion-box span { font-size: 15px; font-weight: 700; color: #155724; }
+
   .hidden { display: none; }
-  .spinner { text-align: center; padding: 16px; color: #888; font-size: 13px; }
+  .spinner { text-align: center; padding: 30px; color: #888; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -52,26 +62,32 @@
 
 <div class="container">
 
-  <div class="card">
-    <div class="label">Escanear producto</div>
-    <video id="qr-video" class="hidden" playsinline></video>
-    <button class="btn-scan" id="btnScan" onclick="toggleScan()">📷 Abrir cámara</button>
-    <div class="sep">— o busca por código —</div>
+  <!-- Búsqueda manual solo para pruebas -->
+  <div class="card" id="cardBusqueda">
+    <div class="label">Buscar por código (prueba)</div>
     <div class="search-group">
-      <input type="text" id="inputCodigo" placeholder="Ej: P001" onkeydown="if(event.key==='Enter') buscarPorCodigo(this.value.trim())" />
-      <button class="btn-buscar" onclick="buscarPorCodigo(document.getElementById('inputCodigo').value.trim())">Buscar</button>
+      <input type="text" id="inputCodigo" placeholder="Ej: P001" onkeydown="if(event.key==='Enter') iniciar(this.value.trim())" />
+      <button class="btn-buscar" onclick="iniciar(document.getElementById('inputCodigo').value.trim())">Buscar</button>
     </div>
-    <div id="spinnerBusqueda" class="spinner hidden">Buscando...</div>
   </div>
 
-  <div class="card hidden" id="cardFiltros">
+  <div id="spinnerBusqueda" class="spinner hidden">Cargando producto...</div>
+
+  <!-- Card producto -->
+  <div class="card hidden" id="cardProducto">
+
+    <!-- Foto slider -->
+    <div class="foto-slider" id="fotoSlider">
+      <div class="no-foto" id="noFoto">Sin fotos aún</div>
+    </div>
+    <div class="foto-dots" id="fotoDots"></div>
+
     <div class="producto-nombre" id="nombreProducto"></div>
-    <div class="precio-base" id="precioBase"></div>
     <div class="label">Selecciona variante</div>
     <div class="filtros-grid">
       <div>
         <div class="filtro-label">Color</div>
-        <select id="selectColor" onchange="verificarStock()">
+        <select id="selectColor" onchange="onColorChange()">
           <option value="">-- Color --</option>
         </select>
       </div>
@@ -94,55 +110,23 @@ const COLORES = ["negro","blanco","rojo","azul","plomo","celeste","verde","amari
 const TALLAS  = ["XS","S","M","L","XL","XXL","XXXL","28","29","30","31","32","33","34","36","38","40","42","44","UNICA"];
 
 let todosLosProductos = [];
-let scanActivo = false;
-let stream = null;
+let fotosActuales = [];
+let fotoIndex = 0;
 
-async function toggleScan() {
-  if (scanActivo) { detenerScan(); return; }
-  scanActivo = true;
-  document.getElementById("btnScan").textContent = "⏹ Detener cámara";
-  const video = document.getElementById("qr-video");
-  video.classList.remove("hidden");
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-    video.srcObject = stream;
-    video.play();
-    requestAnimationFrame(leerQR);
-  } catch(e) {
-    alert("No se pudo acceder a la cámara");
-    detenerScan();
+// Al cargar la página, leer el código de la URL
+window.onload = () => {
+  const params = new URLSearchParams(window.location.search);
+  const codigo = params.get("codigo");
+  if (codigo) {
+    document.getElementById("cardBusqueda").classList.add("hidden");
+    iniciar(codigo);
   }
-}
+};
 
-function detenerScan() {
-  scanActivo = false;
-  document.getElementById("btnScan").textContent = "📷 Abrir cámara";
-  document.getElementById("qr-video").classList.add("hidden");
-  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-}
-
-function leerQR() {
-  if (!scanActivo) return;
-  const video = document.getElementById("qr-video");
-  if (video.readyState !== video.HAVE_ENOUGH_DATA) { requestAnimationFrame(leerQR); return; }
-  const canvas = document.createElement("canvas");
-  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(video, 0, 0);
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const code = jsQR(imageData.data, imageData.width, imageData.height);
-  if (code) {
-    detenerScan();
-    buscarPorCodigo(code.data.trim());
-  } else {
-    requestAnimationFrame(leerQR);
-  }
-}
-
-async function buscarPorCodigo(codigo) {
+async function iniciar(codigo) {
   if (!codigo) return;
   document.getElementById("spinnerBusqueda").classList.remove("hidden");
-  document.getElementById("cardFiltros").classList.add("hidden");
+  document.getElementById("cardProducto").classList.add("hidden");
   try {
     const res = await fetch(`${API}?codigo=${encodeURIComponent(codigo)}`);
     const data = await res.json();
@@ -152,14 +136,15 @@ async function buscarPorCodigo(codigo) {
       return;
     }
     const nombreBase = extraerNombreBase(data[0].descripcion);
-    await buscarVariantes(nombreBase, data[0].precio);
+    const colorEscaneado = extraerColor(data[0].descripcion);
+    await cargarVariantes(nombreBase, colorEscaneado);
   } catch(e) {
     document.getElementById("spinnerBusqueda").classList.add("hidden");
     alert("Error al conectar con el inventario");
   }
 }
 
-async function buscarVariantes(nombreBase, precio) {
+async function cargarVariantes(nombreBase, colorEscaneado) {
   try {
     const res = await fetch(`${API}?busqueda=${encodeURIComponent(nombreBase)}`);
     const data = await res.json();
@@ -177,26 +162,57 @@ async function buscarVariantes(nombreBase, precio) {
     });
 
     document.getElementById("nombreProducto").textContent = nombreBase.toUpperCase();
-    document.getElementById("precioBase").innerHTML = precio ? `Precio base: <strong>S/ ${parseFloat(precio).toFixed(2)}</strong>` : "";
-    llenarSelect("selectColor", [...coloresSet]);
-    llenarSelect("selectTalla",  [...tallasSet]);
-    document.getElementById("cardFiltros").classList.remove("hidden");
-    document.getElementById("resultadoStock").innerHTML = "";
+    llenarSelect("selectColor", [...coloresSet], colorEscaneado);
+    llenarSelect("selectTalla",  [...tallasSet], null);
+    document.getElementById("cardProducto").classList.remove("hidden");
+
+    // Cargar fotos del color escaneado
+    cargarFotos(colorEscaneado || [...coloresSet][0] || "");
+    verificarStock();
   } catch(e) {
     document.getElementById("spinnerBusqueda").classList.add("hidden");
     alert("Error al cargar variantes");
   }
 }
 
-function llenarSelect(id, opciones) {
+function llenarSelect(id, opciones, valorDefecto) {
   const sel = document.getElementById(id);
   const esColor = id === "selectColor";
   sel.innerHTML = `<option value="">-- ${esColor ? "Color" : "Talla"} --</option>`;
   opciones.forEach(op => {
     const opt = document.createElement("option");
-    opt.value = op; opt.textContent = op.toUpperCase();
+    opt.value = op;
+    opt.textContent = op.toUpperCase();
+    if (valorDefecto && op.toLowerCase() === valorDefecto.toLowerCase()) opt.selected = true;
     sel.appendChild(opt);
   });
+}
+
+function onColorChange() {
+  const color = document.getElementById("selectColor").value;
+  cargarFotos(color);
+  verificarStock();
+}
+
+// Por ahora fotos vacías — se conectará a Google Drive en el siguiente paso
+function cargarFotos(color) {
+  const slider = document.getElementById("fotoSlider");
+  const dots   = document.getElementById("fotoDots");
+  // Limpiar fotos anteriores
+  slider.querySelectorAll("img").forEach(el => el.remove());
+  dots.innerHTML = "";
+  fotosActuales = [];
+  fotoIndex = 0;
+  document.getElementById("noFoto").style.display = "flex";
+
+  // TODO: aquí se cargarán las fotos de Google Drive por producto/color
+  // Por ahora muestra "Sin fotos aún"
+}
+
+function mostrarFoto(index) {
+  fotosActuales.forEach((img, i) => img.classList.toggle("active", i === index));
+  document.querySelectorAll("#fotoDots span").forEach((d, i) => d.classList.toggle("active", i === index));
+  fotoIndex = index;
 }
 
 function verificarStock() {
@@ -217,17 +233,15 @@ function verificarStock() {
         <div class="emoji">✅</div>
         <div class="status">HAY STOCK</div>
         <div class="stock-num">${match.stock}</div>
-        <div style="font-size:12px;color:#155724;">unidades disponibles</div>
-        <div class="info-row"><span>📍 Ubicación</span><strong>${match.ubicacion || "—"}</strong></div>
-        <div class="info-row"><span>💰 Precio</span><strong>S/ ${parseFloat(match.precio).toFixed(2)}</strong></div>
-        <div class="info-row"><span>🏷 Código</span><strong>${match.codigo}</strong></div>
+        <div class="stock-label">unidades disponibles</div>
+        <div class="ubicacion-box"><span>📍 ${match.ubicacion || "Sin ubicación"}</span></div>
       </div>`;
   } else {
     div.innerHTML = `
       <div class="resultado nohay">
         <div class="emoji">❌</div>
         <div class="status">SIN STOCK</div>
-        <div style="font-size:13px;color:#721c24;margin-top:6px;">No hay ${color.toUpperCase()} talla ${talla.toUpperCase()}</div>
+        <div style="font-size:13px;color:#721c24;margin-top:8px;">No hay <strong>${color.toUpperCase()}</strong> talla <strong>${talla.toUpperCase()}</strong></div>
       </div>`;
   }
 }
@@ -239,6 +253,11 @@ function extraerNombreBase(descripcion) {
     !COLORES.map(c=>c.toLowerCase()).includes(p)
   );
   return palabras.join(" ").trim();
+}
+
+function extraerColor(descripcion) {
+  const desc = descripcion.toLowerCase();
+  return COLORES.find(c => desc.includes(c.toLowerCase())) || null;
 }
 </script>
 </body>
