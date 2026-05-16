@@ -13,14 +13,12 @@
   .container { padding: 16px; max-width: 480px; margin: 0 auto; }
   .card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
 
-  /* Búsqueda manual (solo para pruebas) */
   .search-group { display: flex; gap: 8px; }
   .search-group input { flex: 1; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px; outline: none; }
   .search-group input:focus { border-color: #111; }
   .btn-buscar { background: #111; color: white; border: none; border-radius: 8px; padding: 12px 18px; font-size: 14px; font-weight: 600; cursor: pointer; }
   .label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
 
-  /* Foto slider */
   .foto-slider { position: relative; width: 100%; height: 220px; background: #eee; border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
   .foto-slider img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s; }
   .foto-slider img.active { opacity: 1; }
@@ -29,14 +27,12 @@
   .foto-dots span { width: 8px; height: 8px; border-radius: 50%; background: #ddd; cursor: pointer; transition: background 0.2s; }
   .foto-dots span.active { background: #111; }
 
-  /* Producto */
   .producto-nombre { font-size: 17px; font-weight: 800; color: #111; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #eee; }
   .filtros-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
   .filtro-label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
   select { width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; background: white; outline: none; cursor: pointer; }
   select:focus { border-color: #111; }
 
-  /* Resultado */
   .resultado { border-radius: 12px; padding: 24px 20px; text-align: center; margin-top: 4px; }
   .resultado.hay { background: #d4edda; border: 2px solid #28a745; }
   .resultado.nohay { background: #f8d7da; border: 2px solid #dc3545; }
@@ -62,7 +58,6 @@
 
 <div class="container">
 
-  <!-- Búsqueda manual solo para pruebas -->
   <div class="card" id="cardBusqueda">
     <div class="label">Buscar por código (prueba)</div>
     <div class="search-group">
@@ -73,10 +68,8 @@
 
   <div id="spinnerBusqueda" class="spinner hidden">Cargando producto...</div>
 
-  <!-- Card producto -->
   <div class="card hidden" id="cardProducto">
 
-    <!-- Foto slider -->
     <div class="foto-slider" id="fotoSlider">
       <div class="no-foto" id="noFoto">Sin fotos aún</div>
     </div>
@@ -113,7 +106,6 @@ let todosLosProductos = [];
 let fotosActuales = [];
 let fotoIndex = 0;
 
-// Al cargar la página, leer el código de la URL
 window.onload = () => {
   const params = new URLSearchParams(window.location.search);
   const codigo = params.get("codigo");
@@ -166,7 +158,6 @@ async function cargarVariantes(nombreBase, colorEscaneado) {
     llenarSelect("selectTalla",  [...tallasSet], null);
     document.getElementById("cardProducto").classList.remove("hidden");
 
-    // Cargar fotos del color escaneado
     cargarFotos(colorEscaneado || [...coloresSet][0] || "");
     verificarStock();
   } catch(e) {
@@ -194,19 +185,40 @@ function onColorChange() {
   verificarStock();
 }
 
-// Por ahora fotos vacías — se conectará a Google Drive en el siguiente paso
-function cargarFotos(color) {
+async function cargarFotos(color) {
   const slider = document.getElementById("fotoSlider");
   const dots   = document.getElementById("fotoDots");
-  // Limpiar fotos anteriores
   slider.querySelectorAll("img").forEach(el => el.remove());
   dots.innerHTML = "";
   fotosActuales = [];
   fotoIndex = 0;
   document.getElementById("noFoto").style.display = "flex";
 
-  // TODO: aquí se cargarán las fotos de Google Drive por producto/color
-  // Por ahora muestra "Sin fotos aún"
+  if (!color) return;
+
+  const nombreBase = document.getElementById("nombreProducto").textContent.toLowerCase();
+  try {
+    const res = await fetch(`${API}?action=fotos&producto=${encodeURIComponent(nombreBase)}&color=${encodeURIComponent(color)}`);
+    const urls = await res.json();
+    if (!urls || urls.length === 0) return;
+
+    document.getElementById("noFoto").style.display = "none";
+    urls.forEach((url, i) => {
+      const img = document.createElement("img");
+      img.src = url;
+      img.className = i === 0 ? "active" : "";
+      img.addEventListener("click", () => mostrarFoto((fotoIndex + 1) % fotosActuales.length));
+      slider.appendChild(img);
+      fotosActuales.push(img);
+
+      const dot = document.createElement("span");
+      dot.className = i === 0 ? "active" : "";
+      dot.addEventListener("click", () => mostrarFoto(i));
+      dots.appendChild(dot);
+    });
+  } catch(e) {
+    console.log("Error cargando fotos", e);
+  }
 }
 
 function mostrarFoto(index) {
